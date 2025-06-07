@@ -1,72 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth.jsx';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, loading, currentUser } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+ 
 
-  // Redirect if user is already logged in
-  useEffect(() => {
-    if (currentUser) {
-      const redirectTo = location.state?.from?.pathname || '/dashboard';
-      navigate(redirectTo, { replace: true });
-    }
-  }, [currentUser, navigate, location]);
 
-  const handleLoginClick = async (e) => {
-    e.preventDefault(); // Prevent form submission default behavior
-    setError('');
-
-    // Form validation
-    if (!email.trim()) {
-      setError('Email is required');
-      return;
-    }
-
-    if (!password) {
-      setError('Password is required');
-      return;
-    }
-
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
       await login(email, password);
-      // Navigation is handled by useEffect when currentUser updates
-    } catch (err) {
-      console.error("Login failed:", err);
-      // Handle specific Firebase auth errors
-      switch (err.code) {
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-        case 'auth/invalid-credential':
-          setError('Invalid email or password.');
-          break;
-        case 'auth/too-many-requests':
-          setError('Too many failed attempts. Please try again later.');
-          break;
-        case 'auth/network-request-failed':
-          setError('Network error. Please check your connection.');
-          break;
-        default:
-          setError('Failed to login. Please try again.');
-      }
+      navigate('/dashboard'); // or any protected route
+    } catch (error) {
+      console.error('Login Error:', error.message);
     }
   };
-
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      handleLoginClick(e);
+      handleSubmit(e);
     }
   };
 
@@ -78,7 +35,7 @@ const LoginScreen = () => {
           <p className="text-sm text-gray-500 mt-1">Login with your credentials</p>
         </div>
 
-        <form onSubmit={handleLoginClick} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div className="p-3 bg-red-100 text-red-700 text-sm rounded-lg" role="alert">
               {error}

@@ -10,15 +10,15 @@ const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { currentUser } = useAuth();
-console.log('cc',currentUser)
+  const { currentUser, role } = useAuth();
+  console.log('cc', currentUser, role);
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         setLoading(true);
         let fetchedTasks = [];
 
-        if (currentUser?.role === 'admin') {
+        if (role === 'admin') {
           // Admins can see all tasks
           fetchedTasks = await getAllTasks();
         } else {
@@ -63,10 +63,10 @@ console.log('cc',currentUser)
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">
-          {currentUser?.role === 'admin' ? 'Dashboard Overview' : 'My Tasks Overview'}
+          {role === 'admin' ? 'Dashboard Overview' : 'My Tasks Overview'}
         </h2>
         <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm">
-          {currentUser?.role === 'admin' ? 'Admin View' : 'Employee View'}
+          {role === 'admin' ? 'Admin View' : 'Employee View'}
         </span>
       </div>
       
