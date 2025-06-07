@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useTask } from '../../context/TaskContext';
+import { useTask } from '../../contexts/TaskContext';
+import { useAuth } from '../../hooks/useAuth';
 
-const TaskModal = ({ task, onClose, users }) => {
-  const { dispatch } = useTask();
+const TaskModal = ({ task, onClose }) => {
+  const { state, dispatch } = useTask();
+  const { currentUser } = useAuth();
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
@@ -33,25 +35,28 @@ const TaskModal = ({ task, onClose, users }) => {
       return;
     }
 
+    const updatedTask = {
+      ...taskForm,
+      assignedTo: taskForm.assignedTo,
+      updatedAt: new Date().toISOString(),
+      updatedBy: currentUser.uid
+    };
+
     if (task) {
-      // Update existing task
       dispatch({
         type: 'UPDATE_TASK',
         payload: {
-          ...task,
-          ...taskForm,
-          assignedTo: parseInt(taskForm.assignedTo)
+          id: task.id,
+          ...updatedTask
         }
       });
     } else {
-      // Create new task
       dispatch({
         type: 'ADD_TASK',
         payload: {
-          ...taskForm,
-          assignedTo: parseInt(taskForm.assignedTo),
-          createdAt: new Date().toISOString().split('T')[0],
-          createdBy: 1 // Assuming admin creates tasks
+          ...updatedTask,
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.uid
         }
       });
     }
@@ -117,7 +122,7 @@ const TaskModal = ({ task, onClose, users }) => {
                 required
               >
                 <option value="">Select user</option>
-                {users.filter(u => u.role === 'user').map(user => (
+                {state.users.filter(u => u.role === 'user').map(user => (
                   <option key={user.id} value={user.id}>{user.name}</option>
                 ))}
               </select>

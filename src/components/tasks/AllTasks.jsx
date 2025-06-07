@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Filter } from 'lucide-react';
-import { useTask } from '../../context/TaskContext';
+import { useTask } from '../../contexts/TaskContext';
+import { useAuth } from '../../hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 import { getPriorityColor, getStatusColor, getUserName } from '../../utils/helpers';
 import TaskModal from '../tasks/TaskModal';
 
 const AllTasks = () => {
   const { state, dispatch } = useTask();
+  const { role } = useAuth();
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -20,8 +23,11 @@ const AllTasks = () => {
     dispatch({ type: 'DELETE_TASK', payload: taskId });
   };
 
+  // Add null check and default to empty array
   const getFilteredTasks = () => {
-    let filtered = state.tasks;
+    if (!state?.tasks) return [];
+    
+    let filtered = [...state.tasks];
 
     if (filterStatus !== 'all') {
       filtered = filtered.filter(task => task.status === filterStatus);
@@ -33,6 +39,45 @@ const AllTasks = () => {
 
     return filtered;
   };
+
+  // Role check
+  if (role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Loading state
+  if (!state || state.loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (state.error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+        {state.error}
+      </div>
+    );
+  }
+
+  // No tasks state
+  if (!state.tasks?.length) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">No tasks available</p>
+        <button
+          onClick={() => openTaskModal()}
+          className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2 mx-auto"
+        >
+          <Plus size={20} />
+          <span>Add First Task</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
