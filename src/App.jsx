@@ -1,31 +1,29 @@
 import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth.jsx';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import LoginScreen from './components/auth/LoginScreen';
 import Header from './components/common/Header';
 import Sidebar from './components/common/Sidebar';
 import Dashboard from './components/dashboard/Dashboard';
 import AllTasks from './components/tasks/AllTasks';
 import MyTasks from './components/user/MyTasks';
-
+import { TaskProvider } from './contexts/TaskContext';
 
 // Layout for protected routes
 const ProtectedLayout = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, role } = useAuth();
 
   if (!currentUser) {
-    // This should ideally not be reached if ProtectedRoute is working,
-    // but as a fallback.
     return <Navigate to="/login" replace />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header currentUser={currentUser} onLogout={logout} />
+      <Header currentUser={currentUser} onLogout={logout} role={role} />
       <div className="flex">
-        <Sidebar currentUser={currentUser} /> {/* Sidebar will use NavLink */}
+        <Sidebar currentUser={currentUser} role={role} />
         <main className="flex-1 p-6">
-          <Outlet /> {/* Nested routes render here */}
+          <Outlet />
         </main>
       </div>
     </div>
@@ -37,15 +35,19 @@ const ProtectedRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading authentication status...</div>; // Or a proper loader/spinner
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
   return currentUser ? children : <Navigate to="/login" replace />;
 };
 
 const App = () => {
-  const { currentUser, loading } = useAuth();
-console.log(currentUser)
+  const { currentUser, loading, role } = useAuth();
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -58,36 +60,34 @@ console.log(currentUser)
   }
 
   return (
-    <Routes>
-      <Route 
-        path="/login" 
-        element={!currentUser ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
-      />
+    <AuthProvider>
+      <TaskProvider>
+        <Routes>
+          <Route 
+            path="/login" 
+            element={!currentUser ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
+          />
 
-      <Route 
-        path="/*"
-        element={
-          <ProtectedRoute>
-            <ProtectedLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route 
-          path="all-tasks" 
-          element={
-            currentUser?.role === 'admin' 
-              ? <AllTasks /> 
-              : <Navigate to="/dashboard" replace />
-          } 
-        />
-        <Route path="my-tasks" element={<MyTasks />} />
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
-      </Route>
-    </Routes>
+          <Route 
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="all-tasks" element={
+              role === 'admin' ? <AllTasks /> : <Navigate to="/dashboard" replace />
+            } />
+            <Route path="my-tasks" element={<MyTasks />} />
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
+          </Route>
+        </Routes>
+      </TaskProvider>
+    </AuthProvider>
   );
 };
-
 
 export default App;

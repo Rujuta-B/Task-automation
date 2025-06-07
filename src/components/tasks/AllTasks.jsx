@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Filter } from 'lucide-react';
-import { useTask } from '../../context/TaskContext';
+import { useTask } from '../../contexts/TaskContext';
+import { useAuth } from '../../hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 import { getPriorityColor, getStatusColor, getUserName } from '../../utils/helpers';
 import TaskModal from '../tasks/TaskModal';
 
 const AllTasks = () => {
   const { state, dispatch } = useTask();
+  const {  role } = useAuth();
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -33,6 +36,26 @@ const AllTasks = () => {
 
     return filtered;
   };
+
+  if (role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (state.loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+        {state.error}
+      </div>
+    );
+  }
 
   return (
     <div>
