@@ -10,14 +10,13 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID, // Optional
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+console.log("Firebase initialized:", app.name);
+console.log("Firebase config:", firebaseConfig.apiKey);
 
 // Initialize Firebase services
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-export { app, auth, db };
+export const auth = getAuth(app);
+export const db = getFirestore(app);

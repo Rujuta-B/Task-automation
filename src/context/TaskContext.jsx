@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer } from 'react';
-import { initialTasks, initialUsers } from '../data/mockData';
+import { initialTasks, initialUsers } from '../api/mockData';
 
 const TaskContext = createContext();
 

@@ -1,47 +1,143 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-const LoginScreen = ({ onLogin }) => {
+const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const { login, loading, currentUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLoginClick = () => {
-    onLogin(email, password);
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (currentUser) {
+      const redirectTo = location.state?.from?.pathname || '/dashboard';
+      navigate(redirectTo, { replace: true });
+    }
+  }, [currentUser, navigate, location]);
+
+  const handleLoginClick = async (e) => {
+    e.preventDefault(); // Prevent form submission default behavior
+    setError('');
+
+    // Form validation
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      await login(email, password);
+      // Navigation is handled by useEffect when currentUser updates
+    } catch (err) {
+      console.error("Login failed:", err);
+      // Handle specific Firebase auth errors
+      switch (err.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          setError('Invalid email or password.');
+          break;
+        case 'auth/too-many-requests':
+          setError('Too many failed attempts. Please try again later.');
+          break;
+        case 'auth/network-request-failed':
+          setError('Network error. Please check your connection.');
+          break;
+        default:
+          setError('Failed to login. Please try again.');
+      }
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleLoginClick(e);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#eef3ff] to-[#e6edfd] px-4">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md px-8 py-10">
-        {/* Title */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-gray-900">Task Manager</h1>
           <p className="text-sm text-gray-500 mt-1">Login with your credentials</p>
         </div>
 
-        {/* Email */}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-        />
+        <form onSubmit={handleLoginClick} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-100 text-red-700 text-sm rounded-lg" role="alert">
+              {error}
+            </div>
+          )}
 
-        {/* Password */}
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full mb-6 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-        />
+          <div className="space-y-2">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              disabled={loading}
+              required
+              autoFocus
+            />
+          </div>
 
-        {/* Login Button */}
-        <button
-          onClick={handleLoginClick}
-          className="w-full bg-[#5c4efc] hover:bg-[#493de0] text-white text-sm font-semibold py-3 rounded-lg transition"
-        >
-          Login
-        </button>
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              disabled={loading}
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-[#5c4efc] hover:bg-[#493de0] text-white text-sm font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging in...
+              </span>
+            ) : (
+              'Login'
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

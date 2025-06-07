@@ -16,11 +16,23 @@ export const getStatusColor = (status) => {
   }
 };
 
-export const getUserName = (userId, users) => {
+export const getUserName = (userId, users = []) => {
+  if (!userId || !users) return 'Unknown';
   return users.find(u => u.id === userId)?.name || 'Unknown';
 };
 
-export const getStats = (tasks) => {
+export const getStats = (tasks = []) => {
+  if (!Array.isArray(tasks)) {
+    console.warn('getStats: tasks parameter must be an array');
+    return {
+      totalTasks: 0,
+      completedTasks: 0,
+      pendingTasks: 0,
+      inProgressTasks: 0,
+      overdueTasks: 0
+    };
+  }
+
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const pendingTasks = tasks.filter(t => t.status === 'pending').length;
@@ -29,5 +41,11 @@ export const getStats = (tasks) => {
     new Date(t.deadline) < new Date() && t.status !== 'completed'
   ).length;
 
-  return { totalTasks, completedTasks, pendingTasks, inProgressTasks, overdueTasks };
+  return { 
+    totalTasks, 
+    completedTasks, 
+    pendingTasks, 
+    inProgressTasks, 
+    overdueTasks 
+  };
 };
